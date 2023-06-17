@@ -1,0 +1,36 @@
+program  media_notas;
+ uses crt;
+ var
+ NOME: string;
+ N1, N2, N3, MEDIA: real;
+ CONT: integer;
+ begin 
+
+if sexo='m' then 
+cont_m:=cont_m+1; 
+
+if sexo='m' then   
+	cont_m:=cont_m+1 
+else 
+	soma_alt := soma_alt+alt; 
+
+if sexo='m' then   
+	cont_m:=cont_m+1 
+else if sexo='f' then
+	soma_alt := soma_alt+alt;  
+
+if sexo='m' then   
+	cont_m:=cont_m+1
+else if sexo='f' then
+	begin
+		soma_alt := soma_alt+alt;
+	end;
+
+if sexo='m' then   
+	cont_m:=cont_m+1
+else if sexo='f' then
+	begin
+		soma_alt := soma_alt+alt;
+	end;
+
+ end.
