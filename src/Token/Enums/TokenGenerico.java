@@ -3,9 +3,9 @@ package Token.Enums;
 public enum TokenGenerico implements TipoToken {
     ERRO("TOKEN DE ERRO"),
     ID("IDENTIFICADOR"),
-    VALORINT("VALOR INTEIRO"),
-    VALOREAL("VALOR REAL"),
-    VALORLIT("VALOR LITERAL"),
+    VALORINT("INTEGER"),
+    VALOREAL("REAL"),
+    VALORLIT("STRING"),
     FIMLEITURA("FIM LEITURA DE ARQUIVO");
 
     private final String descricao;

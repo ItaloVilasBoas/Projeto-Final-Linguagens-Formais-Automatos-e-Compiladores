@@ -1,10 +1,10 @@
 import Analisador.AnalisadorLexico;
-import Analisador.NovoAnalisadorSintatico;
+import Analisador.AnalisadorSintatico;
 import Analisador.TokenController;
 
 public class App {
 
-    public static AnalisadorLexico analisadorLexico = new AnalisadorLexico("sample2.minipascal");
+    public static AnalisadorLexico analisadorLexico = new AnalisadorLexico("sample.minipascal");
     public static TokenController tkController = new TokenController();
     public static Integer errosSintatico = 0;
 
@@ -16,7 +16,7 @@ public class App {
         // tk = AnalisadorLexico.proximoToken();
         // }
 
-        NovoAnalisadorSintatico.start();
+        AnalisadorSintatico.start();
     }
 
 }

@@ -27,17 +27,25 @@ public class TokenSintatico extends Token {
     }
 
     public void imprimeToken(String tabulacao) {
-        if (this.getTipo().equals(TokenSintaticosEnum.EXPRESSAO)
-                || ((this.getTipo().equals(TokenSintaticosEnum.COMANDO_COMPOSTO)) && (this.getTokens().size() == 1))) {
+        if (((this.getTipoToken().equals(TokenSintaticosEnum.COMANDO_COMPOSTO)) && (this.getTokens().size() == 1))) {
             for (Token token : tokens) {
+                // if (token instanceof TokenSintatico || token instanceof TokenSemantico)
                 token.imprimeToken(tabulacao);
             }
         } else {
-            System.out.print(tabulacao + "<" + this.getTipo().getDescricao() + ">\n");
+            System.out.print(tabulacao + "<" + this.getTipoToken().getDescricao() + ">\n");
             for (Token token : tokens) {
+                // if (token instanceof TokenSintatico || token instanceof TokenSemantico)
                 token.imprimeToken(tabulacao + "\t");
             }
-            System.out.print(tabulacao + "</" + this.getTipo().getDescricao() + ">\n");
+            System.out.print(tabulacao + "</" + this.getTipoToken().getDescricao() + ">\n");
         }
+    }
+
+    public void imprimeErro() {
+        for (Token token : tokens) {
+            token.imprimeErro();
+        }
+
     }
 }

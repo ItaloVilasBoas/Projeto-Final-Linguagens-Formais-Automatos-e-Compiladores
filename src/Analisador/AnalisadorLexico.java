@@ -47,18 +47,18 @@ public class AnalisadorLexico {
                     for (Token token : geraToken(line)) {
                         if (!comentarioK && !comentarioP)
                             tksEncontrados.add(token);
-                        if (token.getTipo().equals(TokensReservados.LCOMENTK) && (!comentarioK && !comentarioP)) {
+                        if (token.getTipoToken().equals(TokensReservados.LCOMENTK) && (!comentarioK && !comentarioP)) {
                             comentarioK = true;
-                        } else if (comentarioK && token.getTipo().equals(TokensReservados.RCOMENTK)) {
+                        } else if (comentarioK && token.getTipoToken().equals(TokensReservados.RCOMENTK)) {
                             comentarioK = false;
                             tksEncontrados.add(token);
-                        } else if (token.getTipo().equals(TokensReservados.LCOMENTP)
+                        } else if (token.getTipoToken().equals(TokensReservados.LCOMENTP)
                                 && (!comentarioK && !comentarioP)) {
                             comentarioP = true;
-                        } else if (comentarioP && token.getTipo().equals(TokensReservados.RCOMENTP)) {
+                        } else if (comentarioP && token.getTipoToken().equals(TokensReservados.RCOMENTP)) {
                             comentarioP = false;
                             tksEncontrados.add(token);
-                        } else if (token.getTipo().equals(TokensReservados.COMENTLIN)
+                        } else if (token.getTipoToken().equals(TokensReservados.COMENTLIN)
                                 && (!comentarioK && !comentarioP)) {
                             break;
                         }

@@ -22,7 +22,12 @@ public class TokenController {
         Arrays.asList(TokensReservados.values()).stream().forEach(tipo -> {
             adicionaPalavraListaReservadas(tipo.getDescricao(), new Token(tipo, tipo.toString()));
         });
-        // INICIAR LISTA PROCEDURES COM AS PROCEDURES DO PROGRAMA
+        List.of(TokensReservados.WRITE, TokensReservados.WRITELN, TokensReservados.READ, TokensReservados.READLN)
+                .forEach(tipo -> {
+                    adicionaPalavraListaProcedures(tipo.getDescricao(), new Token(tipo, tipo.getDescricao()), null);
+                    adicionaPalavraListaIdentificadores(tipo.getDescricao(), new Token(tipo, tipo.getDescricao()));
+                    updateCategoriaTkIds(tipo.getDescricao(), "procedure");
+                });
     }
 
     public static Token getToken(EstadosEnum estadoEnum, String palavra) {
@@ -57,7 +62,9 @@ public class TokenController {
     }
 
     public static Token adicionaPalavraListaIdentificadores(String chave, Token token) {
-        listaIdentificadores.put(chave, new TokenIdentificador(token));
+        chave = chave.toUpperCase();
+        if (listaIdentificadores.get(chave) == null)
+            listaIdentificadores.put(chave, new TokenIdentificador(token));
         return token;
     }
 
@@ -65,29 +72,42 @@ public class TokenController {
         return listaProcedures;
     }
 
-    public static Token adicionaPalavraListaProcedures(String chave, Token token, List<TokenIdentificador> parametros) {
-        listaProcedures.put(chave, new TokenProcedure(token, parametros));
-        return token;
+    public static TokenProcedure getProcedureLstProcedure(String palavra) {
+        palavra = palavra.toUpperCase();
+        return listaProcedures.get(palavra);
+    }
+
+    public static TokenProcedure adicionaPalavraListaProcedures(String chave, Token token,
+            List<TokenIdentificador> parametros) {
+        chave = chave.toUpperCase();
+        TokenProcedure declaracao = new TokenProcedure(token, parametros);
+        listaProcedures.put(chave, declaracao);
+        return declaracao;
     }
 
     public static TokenIdentificador getTkIds(String palavra) {
+        palavra = palavra.toUpperCase();
         return listaIdentificadores.get(palavra);
     }
 
     public static void updateTipoDadoTkIds(String palavra, String tipo) {
+        palavra = palavra.toUpperCase();
         listaIdentificadores.get(palavra).setTipoDado(tipo);
     }
 
-    public static void updateCategoriaVarTkIds(String palavra, String categoria) {
+    public static void updateCategoriaTkIds(String palavra, String categoria) {
+        palavra = palavra.toUpperCase();
         listaIdentificadores.get(palavra).setCategoria(categoria);
     }
 
     public Token adicionaPalavraListaReservadas(String chave, Token token) {
+        chave = chave.toUpperCase();
         listaPalavrasReservadas.put(chave, token);
         return token;
     }
 
     public Token getTokenPalavraReservada(String palavra) {
+        palavra = palavra.toUpperCase();
         return listaPalavrasReservadas.get(palavra.toUpperCase());
     }
 }

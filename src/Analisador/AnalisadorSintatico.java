@@ -1,40 +1,46 @@
 package Analisador;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
-import Exceptions.SyntaxException;
+import Exceptions.AnaliseException;
 import Token.Token;
 import Token.TokenIdentificador;
+import Token.TokenProcedure;
 import Token.TokenSintatico;
 import Token.Enums.*;
 import static Token.Enums.TokenGenerico.*;
 import static Token.Enums.TokensReservados.*;
 import static Token.Enums.TokenSintaticosEnum.*;
 
-//SUBSTITUIR .getTokens().add(tokenAtual); POR ADICIONATOKENANALISADO()
-public class NovoAnalisadorSintatico {
+public class AnalisadorSintatico {
 
     private static List<Token> tokensAnalisados = new ArrayList<>();
     private static TokenSintatico programa = new TokenSintatico(PROGRAMA, new ArrayList<>());
     private static Stack<Token> guardaTokensObtidos = new Stack<>();
     private static TokenSintaticosEnum estadoAnalise;
+    private static String procedureAnalisando = "";
     private static Token tokenAtual;
+    private static String tokenComErro = "";
 
-    public static void start() {
+    public static List<Token> start() {
         estadoAnalise = PROGRAMA;
         try {
             tokenAtual = geraToken();
             regras();
-        } catch (SyntaxException e) {
-            System.out.println("\u001B[31m" + e.getMessage() + "\u001B[0m");
+            tokensAnalisados.forEach(token -> token.imprimeToken(""));
+            return tokensAnalisados;
+        } catch (AnaliseException e) {
+            tokensAnalisados.forEach(token -> token.imprimeErro());
+            System.out.println("\u001B[31m" + e.getTipo() + " Exception, " + e.getMessage() + "\u001B[0m");
+            return null;
         }
-        tokensAnalisados.forEach(token -> token.imprimeToken(""));
-
     }
 
-    private static void regras() throws SyntaxException {
+    private static void regras() throws AnaliseException {
 
         TokenSintatico bloco = new TokenSintatico(BLOCO, new ArrayList<>());
 
@@ -53,6 +59,8 @@ public class NovoAnalisadorSintatico {
                             addTokenAnalisado(bloco);
                             estadoAnalise = COMANDO_COMPOSTO;
                         } else {
+                            if (!bloco.getTokens().get(bloco.getTokens().size() - 1).getTipoToken().equals(ERRO))
+                                tokenComErro = tokenAtual.getLexema();
                             bloco.getTokens().add(new Token(ERRO,
                                     "Syntax exception, " + tokenAtual.getLexema()
                                             + " is not a valid token for <BLOCO>"));
@@ -76,7 +84,7 @@ public class NovoAnalisadorSintatico {
                         break;
                 }
             }
-        } catch (SyntaxException e) {
+        } catch (AnaliseException e) {
             throw e;
         } finally {
             programa.getTokens().add(programa.getTokens().size() - 1, bloco);
@@ -84,7 +92,7 @@ public class NovoAnalisadorSintatico {
 
     }
 
-    private static Boolean analisaPrograma() throws SyntaxException {
+    private static Boolean analisaPrograma() throws AnaliseException {
         tokensAnalisados.add(programa);
 
         if (!esperaToken(tokenAtual, PROGRAM, programa)) {
@@ -93,7 +101,7 @@ public class NovoAnalisadorSintatico {
         if (!esperaToken(geraToken(), ID, programa)) {
             return trataErro(List.of(BEGIN, PROCEDURE, VAR));
         } else {
-            TokenController.updateCategoriaVarTkIds(tokenAtual.getLexema(), "program");
+            TokenController.updateCategoriaTkIds(tokenAtual.getLexema(), "program");
         }
         if (!esperaToken(geraToken(), FDEFIN, programa)) {
             return trataErro(List.of(BEGIN, PROCEDURE, VAR));
@@ -103,7 +111,7 @@ public class NovoAnalisadorSintatico {
         return true;
     }
 
-    private static Boolean analisaDeclaracaoVariaveis(TokenSintatico tkPai) throws SyntaxException {
+    private static Boolean analisaDeclaracaoVariaveis(TokenSintatico tkPai) throws AnaliseException {
         List<Token> listIds = new ArrayList<>();
         TokenSintatico declaracaoV = new TokenSintatico(DECLARACAO_VARIAVEIS, new ArrayList<>());
 
@@ -127,24 +135,35 @@ public class NovoAnalisadorSintatico {
                 return trataErro(List.of(BEGIN, PROCEDURE, VAR));
             if (!esperaLstToken(geraToken(), List.of(INTEGER, REAL, BOOLEAN, STRING), declaracaoV))
                 return trataErro(List.of(BEGIN, PROCEDURE, VAR));
-            {
-                // ANALISADOR SEMANTICO AQUI
-            }
+
+            if (tkPai.getTipoToken().equals(DECLARACAO_PROCEDIMENTO))
+                listIds = AnalisadorSemantico.analisaDeclaracaoVariaveis(listIds, tokenAtual.getLexema(),
+                        tkPai.getTokens().get(1).getLexema());
+            else
+                listIds = AnalisadorSemantico.analisaDeclaracaoVariaveis(listIds, tokenAtual.getLexema());
+
             if (!esperaToken(geraToken(), FDEFIN, declaracaoV))
                 return trataErro(List.of(BEGIN, PROCEDURE, VAR));
         }
-        tkPai.getTokens().add(declaracaoV);
+        addTkSintaticoFilho(tkPai, declaracaoV);
         estadoAnalise = BLOCO;
         return true;
     }
 
-    private static Boolean analisaDeclaracaoProcedimento(TokenSintatico tkPai) throws SyntaxException {
+    private static Boolean analisaDeclaracaoProcedimento(TokenSintatico tkPai) throws AnaliseException {
         TokenSintatico declaracaoP = new TokenSintatico(DECLARACAO_PROCEDIMENTO, new ArrayList<>());
 
         if (!esperaToken(tokenAtual, PROCEDURE, declaracaoP))
             return trataErro(List.of(BEGIN, PROCEDURE, VAR));
         if (!esperaToken(geraToken(), ID, declaracaoP))
             return trataErro(List.of(BEGIN, PROCEDURE, VAR));
+        String lexemaProcedure = tokenAtual.getLexema().toUpperCase();
+
+        if (TokenController.getTkIds(lexemaProcedure).getCategoria() != null)
+            throw new AnaliseException("Duplicate local variable " + lexemaProcedure, "Semantic");
+
+        TokenController.updateCategoriaTkIds(lexemaProcedure, "procedure");
+        var declaracao = TokenController.adicionaPalavraListaProcedures(lexemaProcedure, tokenAtual, null);
 
         if (comparaToken(geraToken(), LPAREN)) {
             TokenSintatico parametrosFormais = new TokenSintatico(PARAMETROS_FORMAIS, new ArrayList<>());
@@ -158,18 +177,27 @@ public class NovoAnalisadorSintatico {
                 }
                 if (!esperaToken(tokenAtual, ID, parametrosFormais))
                     return trataErro(List.of(BEGIN, PROCEDURE, VAR));
+                List<Token> listIds = new ArrayList<>();
+                listIds.add(tokenAtual);
 
                 while (!(comparaToken(geraToken(), DECTIPO))) {
                     if (!esperaToken(tokenAtual, SEPLISTA, parametrosFormais))
                         return trataErro(List.of(BEGIN, PROCEDURE, VAR));
                     if (!esperaToken(geraToken(), ID, parametrosFormais))
                         return trataErro(List.of(BEGIN, PROCEDURE, VAR));
+                    listIds.add(tokenAtual);
                 }
 
                 if (!esperaToken(tokenAtual, DECTIPO, parametrosFormais))
                     return trataErro(List.of(BEGIN, PROCEDURE, VAR));
                 if (!esperaLstToken(geraToken(), List.of(INTEGER, REAL, BOOLEAN, STRING), parametrosFormais))
                     return trataErro(List.of(BEGIN, PROCEDURE, VAR));
+
+                listIds.forEach(
+                        id -> {
+                            declaracao.getParametros().add(new TokenIdentificador(id, tokenAtual.getLexema()));
+                        });
+
                 if (!esperaLstToken(geraToken(), List.of(FDEFIN, RPAREN), parametrosFormais))
                     return trataErro(List.of(BEGIN, PROCEDURE, VAR));
             }
@@ -178,33 +206,37 @@ public class NovoAnalisadorSintatico {
         if (!esperaToken(geraToken(), FDEFIN, declaracaoP))
             return trataErro(List.of(BEGIN, PROCEDURE, VAR));
 
-        if (comparaToken(geraToken(), VAR)) {
+        if (comparaToken(geraToken(), VAR))
             analisaDeclaracaoVariaveis(declaracaoP);
-        }
 
         if (!esperaToken(tokenAtual, BEGIN, declaracaoP))
             return trataErro(List.of(BEGIN, PROCEDURE, VAR));
 
+        procedureAnalisando = lexemaProcedure;
         analisaComandoComposto(List.of(END), declaracaoP);
         addTokenAnalisado(declaracaoP);
 
-        if (!esperaToken(geraToken(), FDEFIN, declaracaoP))
+        if (!esperaToken(geraToken(), FDEFIN, declaracaoP)) {
+            procedureAnalisando = "";
             return trataErro(List.of(BEGIN, PROCEDURE, VAR));
+        }
 
         geraToken();
-        tkPai.getTokens().add(declaracaoP);
+        addTkSintaticoFilho(tkPai, declaracaoP);
+        procedureAnalisando = "";
+        estadoAnalise = BLOCO;
         return true;
     }
 
     private static Boolean analisaComandoComposto(List<TipoToken> finalExpressao, TokenSintatico tkPai)
-            throws SyntaxException {
+            throws AnaliseException {
 
         TokenSintatico comandoComposto = new TokenSintatico(COMANDO_COMPOSTO, new ArrayList<>());
         while (comparaLstToken(geraToken(), finalExpressao) == false) {
             analisaComando(finalExpressao, comandoComposto);
         }
 
-        tkPai.getTokens().add(comandoComposto);
+        addTkSintaticoFilho(tkPai, comandoComposto);
         return true;
     }
 
@@ -212,26 +244,34 @@ public class NovoAnalisadorSintatico {
         return List.of(WRITE, WRITELN, READ, READLN, PRINT);
     }
 
-    private static Boolean analisaComando(List<TipoToken> finalExpressao, TokenSintatico tkPai) throws SyntaxException {
+    private static Boolean analisaComando(List<TipoToken> finalExpressao, TokenSintatico tkPai)
+            throws AnaliseException {
         TokenSintatico comando = new TokenSintatico(COMANDO, new ArrayList<>());
         List<TipoToken> lstTksProced = proceduresReservadas();
 
         if (comparaToken(tokenAtual, ID) || comparaLstToken(tokenAtual, lstTksProced)) {
-            comando.getTokens().add(tokenAtual);
+            var tokenID = tokenAtual;
             if (comparaLstToken(geraToken(), List.of(FDEFIN, LPAREN))) {
                 List<TipoToken> fimExpressao = finalExpressao;
-                if (tkPai.getTipo().equals(COMANDO_COMPOSTO))
+                if (tkPai.getTipoToken().equals(COMANDO_COMPOSTO))
                     fimExpressao = List.of(FDEFIN);
+                comando.getTokens().add(tokenID);
                 analisaChamadaProcedimento(comando, fimExpressao);
             } else {
-                if (!esperaLstToken(tokenAtual, List.of(ATRIBUICAO), comando)) {
-                    comando.getTokens().remove(comando.getTokens().size() - 2);
+                TokenSintatico estruturaAt = new TokenSintatico(ESTRUTURA_ATRIBUICAO, new ArrayList<>());
+                if (!esperaLstToken(tokenAtual, List.of(ATRIBUICAO), estruturaAt)) {
+                    if (comando.getTokens().size() - 2 >= 0)
+                        comando.getTokens().remove(comando.getTokens().size() - 2);
                     trataErro(List.of(FDEFIN));
                 } else {
+                    estruturaAt.getTokens().add(0, tokenID);
                     List<TipoToken> fimExpressao = finalExpressao;
-                    if (tkPai.getTipo().equals(COMANDO_COMPOSTO))
+                    if (tkPai.getTipoToken().equals(COMANDO_COMPOSTO))
                         fimExpressao = List.of(FDEFIN);
-                    analisaExpressaoTrecho(fimExpressao, comando);
+                    analisaExpressaoTrecho(fimExpressao, estruturaAt);
+                    removerUltimoTokenLstExpressao(estruturaAt, List.of(FDEFIN, ELSE));
+                    estruturaAt.getTokens().add(tokenAtual);
+                    addTkSintaticoFilho(comando, estruturaAt);
                 }
             }
         } else if (comparaToken(tokenAtual, IF)) {
@@ -242,13 +282,30 @@ public class NovoAnalisadorSintatico {
             if (!esperaLstToken(tokenAtual, finalExpressao, tkPai))
                 return trataErro(List.of(FDEFIN));
         }
-
-        tkPai.getTokens().add(comando);
+        addTkSintaticoFilho(tkPai, comando);
         return true;
     }
 
+    private static void addTkSintaticoFilho(TokenSintatico tkPai, TokenSintatico tkFilho) throws AnaliseException {
+
+        List<TipoToken> lista = List.of(ESTRUTURA_ATRIBUICAO, LISTA_EXPRESSAO,
+                REPETITIVO, CHAMADA_PROCEDIMENTO,
+                CONDICIONAL);
+        if (comparaLstToken(tkFilho, lista)) {
+            Map<String, TokenIdentificador> listaIds;
+            if (procedureAnalisando.equals("")) {
+                listaIds = TokenController.getListaIdentificadores();
+            } else {
+                TokenProcedure procedure = TokenController.getListaProcedures().get(procedureAnalisando);
+                listaIds = procedure == null ? new HashMap<>() : procedure.getListaIdentificadores();
+            }
+            tkFilho = AnalisadorSemantico.analisaSemantica(tkFilho, listaIds);
+        }
+        tkPai.getTokens().add(tkFilho);
+    }
+
     private static Boolean analisaChamadaProcedimento(TokenSintatico tkPai, List<TipoToken> finalExpressao)
-            throws SyntaxException {
+            throws AnaliseException {
         TokenSintatico chamadaProcedimento = new TokenSintatico(CHAMADA_PROCEDIMENTO, new ArrayList<>());
 
         chamadaProcedimento.getTokens().add(tkPai.getTokens().remove(tkPai.getTokens().size() - 1));
@@ -262,36 +319,18 @@ public class NovoAnalisadorSintatico {
                 while (!comparaToken(tokenAtual, RPAREN)) {
                     analisaExpressaoTrecho(List.of(RPAREN, SEPLISTA), chamadaProcedimento);
                 }
-                if (comparaToken(tokenAtual, RPAREN)) {
-                    // List<Token> listaTk = chamadaProcedimento.getTokens();
-                    // Token lParen = listaTk.remove(1);
-                    // ((TokenSintatico) listaTk.get(1)).getTokens().add(0, lParen);
 
-                    List<Token> listaLstExpr = new ArrayList<>();
-                    List<Token> removeAll = new ArrayList<>();
-
-                    listaLstExpr.add(chamadaProcedimento.getTokens().remove(1));
-                    for (Token t : chamadaProcedimento.getTokens()) {
-                        if (t.getTipo().equals(LISTA_EXPRESSAO)) {
-                            listaLstExpr.addAll(((TokenSintatico) t).getTokens());
-                            removeAll.add(t);
-                        }
-                    }
-
-                    chamadaProcedimento.getTokens().removeAll(removeAll);
-                    chamadaProcedimento.getTokens().add(new TokenSintatico(LISTA_EXPRESSAO, listaLstExpr));
-                }
             }
             geraToken();
         }
         if (!esperaLstToken(tokenAtual, finalExpressao, chamadaProcedimento))
             return trataErro(List.of(FDEFIN));
-        tkPai.getTokens().add(chamadaProcedimento);
+        addTkSintaticoFilho(tkPai, chamadaProcedimento);
         return true;
     }
 
     private static Boolean analisaExpressaoTrecho(List<TipoToken> fExpressoes, TokenSintatico tkPai)
-            throws SyntaxException {
+            throws AnaliseException {
 
         TokenSintatico lstExp = new TokenSintatico(LISTA_EXPRESSAO, new ArrayList<>());
         List<TipoToken> listaCmp = List.of(ID, VALORINT, VALORLIT, VALOREAL, OPARITSOMA, OPARITSUB, OPALOGNOT, LPAREN);
@@ -304,7 +343,7 @@ public class NovoAnalisadorSintatico {
             analisaExpressao(fExpressoes, lstExp, qtd++);
         }
 
-        tkPai.getTokens().add(lstExp);
+        addTkSintaticoFilho(tkPai, lstExp);
         return true;
     }
 
@@ -315,7 +354,7 @@ public class NovoAnalisadorSintatico {
     }
 
     private static Boolean analisaExpressao(List<TipoToken> finalExpressoes, TokenSintatico tkPai, Integer qtd)
-            throws SyntaxException {
+            throws AnaliseException {
 
         List<TipoToken> opArit = new ArrayList<>();
         List<TipoToken> opRela = new ArrayList<>();
@@ -379,14 +418,20 @@ public class NovoAnalisadorSintatico {
 
     private static void removerUltimoTokenLstExpressao(TokenSintatico retirarDe, TipoToken TIPO) {
         Token ultimaExpressaoAnalisada = retirarDe.getTokens().get(retirarDe.getTokens().size() - 1);
-        if (ultimaExpressaoAnalisada.getTipo().equals(LISTA_EXPRESSAO)) {
+        if (ultimaExpressaoAnalisada.getTipoToken().equals(LISTA_EXPRESSAO)) {
             List<Token> lstTokensExpressao = ((TokenSintatico) ultimaExpressaoAnalisada).getTokens();
-            if (lstTokensExpressao.get(lstTokensExpressao.size() - 1).getTipo().equals(TIPO))
+            if (lstTokensExpressao.get(lstTokensExpressao.size() - 1).getTipoToken().equals(TIPO))
                 lstTokensExpressao.remove(lstTokensExpressao.size() - 1);
         }
     }
 
-    private static Boolean analisaRepetitivo(TokenSintatico tkPai) throws SyntaxException {
+    private static void removerUltimoTokenLstExpressao(TokenSintatico retirarDe, List<TipoToken> TIPO) {
+        for (TipoToken tipoToken : TIPO) {
+            removerUltimoTokenLstExpressao(retirarDe, tipoToken);
+        }
+    }
+
+    private static Boolean analisaRepetitivo(TokenSintatico tkPai) throws AnaliseException {
         TokenSintatico tkRepetitivo = new TokenSintatico(REPETITIVO, new ArrayList<>());
         tkRepetitivo.getTokens().add(tokenAtual);
 
@@ -411,14 +456,18 @@ public class NovoAnalisadorSintatico {
             tkRepetitivo.getTokens().add(tokenAtual);
             analisaExpressaoTrecho(List.of(FDEFIN), tkRepetitivo);
         } else if (comparaToken(tokenAtual, FOR)) {
-            if (!esperaToken(geraToken(), ID, tkRepetitivo))
+            TokenSintatico estruturaAt = new TokenSintatico(ESTRUTURA_ATRIBUICAO, new ArrayList<>());
+            Token esperaId = geraToken();
+            Token esperaAtribuicao = geraToken();
+            if (!esperaToken(esperaId, ID, estruturaAt))
                 return trataErro(List.of(FDEFIN));
-            if (!esperaToken(geraToken(), ATRIBUICAO, tkRepetitivo))
+            if (!esperaToken(esperaAtribuicao, ATRIBUICAO, estruturaAt))
                 return trataErro(List.of(FDEFIN));
+            analisaExpressaoTrecho(List.of(TO, DOWNTO), estruturaAt);
+            removerUltimoTokenLstExpressao(estruturaAt, List.of(TO, DOWNTO));
+            addTkSintaticoFilho(tkRepetitivo, estruturaAt);
 
-            analisaExpressaoTrecho(List.of(TO, DOWNTO), tkRepetitivo);
-
-            removerUltimoTokenLstExpressao(tkRepetitivo, tokenAtual.getTipo());
+            removerUltimoTokenLstExpressao(tkRepetitivo, tokenAtual.getTipoToken());
             if (!esperaLstToken(tokenAtual, List.of(TO, DOWNTO), tkRepetitivo))
                 return trataErro(List.of(FDEFIN));
 
@@ -435,12 +484,12 @@ public class NovoAnalisadorSintatico {
             if (!esperaToken(geraToken(), FDEFIN, tkRepetitivo))
                 return trataErro(List.of(FDEFIN));
         }
-        tkPai.getTokens().add(tkRepetitivo);
+        addTkSintaticoFilho(tkPai, tkRepetitivo);
         return true;
     }
 
     private static Boolean analisaCondicional(TokenSintatico tkPai, List<TipoToken> finalExpressao)
-            throws SyntaxException {
+            throws AnaliseException {
 
         TokenSintatico tkCondicional = new TokenSintatico(CONDICIONAL, new ArrayList<>());
         List<Token> tokensCondicionais = tkCondicional.getTokens();
@@ -475,29 +524,31 @@ public class NovoAnalisadorSintatico {
             voltaToken();
         }
 
-        tkPai.getTokens().add(tkCondicional);
+        addTkSintaticoFilho(tkPai, tkCondicional);
         return true;
     }
 
-    private static Boolean trataErro(List<TipoToken> proximosTokenValido) throws SyntaxException {
-        String tokenComErro = tokenAtual.getTipo().getDescricao();
-        System.out.println("\u001B[31m ----------- ERRO ------------ \u001B[0m");
+    private static Boolean trataErro(List<TipoToken> proximosTokenValido) throws AnaliseException {
+        tokenComErro = tokenAtual.getTipoToken().getDescricao();
+        // System.out.println("\u001B[31m ----------- ERRO ------------ \u001B[0m");
         while (geraToken() != null) {
             if (comparaLstToken(tokenAtual, proximosTokenValido)) {
                 return false;
+            } else if (comparaToken(tokenAtual, FIMLEITURA)) {
+                return false;
             }
         }
-        throw new SyntaxException("Syntax Exception, is not possible to recover from token " + tokenComErro);
+        throw new AnaliseException("Was not possible to recover the program from token " + tokenComErro, "Syntax");
     }
 
     private static boolean comparaToken(Token tokenRecebido, TipoToken tokenEsperado) {
-        return tokenRecebido.getTipo().equals(tokenEsperado);
+        return tokenRecebido.getTipoToken().equals(tokenEsperado);
     }
 
     private static boolean comparaLstToken(Token tokenRecebido, List<TipoToken> tokensEsperados) {
 
         for (TipoToken tipoToken : tokensEsperados) {
-            if (tokenRecebido.getTipo().equals(tipoToken)) {
+            if (tokenRecebido.getTipoToken().equals(tipoToken)) {
                 return true;
             }
         }
@@ -505,18 +556,18 @@ public class NovoAnalisadorSintatico {
     }
 
     private static Boolean esperaToken(Token tokenRecebido, TipoToken tokenEsperado, TokenSintatico tkPai)
-            throws SyntaxException {
+            throws AnaliseException {
 
-        String mensagem = "Syntax error, expecting '" + tokenEsperado.getDescricao() + "' ";
-        mensagem += "but '" + tokenRecebido.getTipo().getDescricao() + "' found";
+        String mensagem = "expecting '" + tokenEsperado.getDescricao() + "' ";
+        mensagem += "but '" + tokenRecebido.getTipoToken().getDescricao() + "' found";
 
-        if (tokenRecebido.getTipo().equals(ERRO)) {
+        if (tokenRecebido.getTipoToken().equals(ERRO)) {
             mensagem = tokenRecebido.getLexema();
             tkPai.getTokens().add(tokenRecebido);
             return false;
         }
 
-        Boolean isCorreto = tokenRecebido.getTipo().equals(tokenEsperado);
+        Boolean isCorreto = tokenRecebido.getTipoToken().equals(tokenEsperado);
         Token esperaToken = isCorreto ? tokenRecebido : new Token(ERRO, mensagem);
         tkPai.getTokens().add(esperaToken);
 
@@ -524,16 +575,16 @@ public class NovoAnalisadorSintatico {
     }
 
     private static Boolean esperaLstToken(Token tokenRecebido, List<TipoToken> tokensEsperados, TokenSintatico tkPai) {
-        String mensagem = "Syntax error, not expecting '" + tokenRecebido.getTipo().getDescricao() + "'";
+        String mensagem = "not expecting '" + tokenRecebido.getTipoToken().getDescricao() + "'";
 
-        if (tokenRecebido.getTipo().equals(ERRO)) {
+        if (tokenRecebido.getTipoToken().equals(ERRO)) {
             mensagem = tokenRecebido.getLexema();
             tkPai.getTokens().add(tokenRecebido);
             return false;
         }
 
         for (TipoToken tipoToken : tokensEsperados) {
-            if (tokenRecebido.getTipo().equals(tipoToken)) {
+            if (tokenRecebido.getTipoToken().equals(tipoToken)) {
                 tkPai.getTokens().add(tokenRecebido);
                 return true;
             }
@@ -547,7 +598,7 @@ public class NovoAnalisadorSintatico {
         tkPai.getTokens().add(tokenAtual);
     }
 
-    private static Token geraToken() throws SyntaxException {
+    private static Token geraToken() throws AnaliseException {
         guardaTokensObtidos.push(tokenAtual);
         tokenAtual = AnalisadorLexico.proximoToken();
         while (tokenAtual == null
@@ -555,14 +606,14 @@ public class NovoAnalisadorSintatico {
             tokenAtual = AnalisadorLexico.proximoToken();
         }
 
-        if (tokenAtual.getTipo().equals(FIMLEITURA)) {
-            String mensagem = "was no possible to find the end of program, token chain ended before.";
-            programa.getTokens().add(new Token(ERRO, mensagem));
-            throw new SyntaxException("");
+        if (tokenAtual.getTipoToken().equals(FIMLEITURA)) {
+            String mensagem = "Was not possible to recover the program from token " + tokenComErro
+                    + ", token chain ended before.";
+            throw new AnaliseException(mensagem, "Syntax");
         }
 
-        System.out.println("-------------------------------------------");
-        System.out.println(tokenAtual);
+        // System.out.println("-------------------------------------------");
+        // System.out.println(tokenAtual);
 
         return tokenAtual;
     }
@@ -571,8 +622,8 @@ public class NovoAnalisadorSintatico {
         AnalisadorLexico.pushToken(tokenAtual);
         tokenAtual = guardaTokensObtidos.pop();
 
-        System.out.println("----------------VOLTA----------------------");
-        System.out.println(tokenAtual);
+        // System.out.println("----------------VOLTA----------------------");
+        // System.out.println(tokenAtual);
 
         return tokenAtual;
     }

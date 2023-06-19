@@ -1,4 +1,5 @@
 program alturamf;
+
   procedure teste (VAR N, B: integer; var score: integer);
     var
       quant,cont,cont_m,cont_f:integer;
@@ -7,13 +8,10 @@ program alturamf;
   begin
     if dif>0 then 
         write(dif,'% a mais de homens')
-    else write(abs,'% a mais de mulheres');
-    chamadaProcedure;
-    chamadaProcedure();
-    chamadaProcedure(argumento);
-    chamadaProcedure(argumento1, argumento2, 3);
+    else write(sexo,'% a mais de mulheres');
   end;
 
 begin
+  teste(3, 4, 5);
   write('nao faz nada');
 end.
