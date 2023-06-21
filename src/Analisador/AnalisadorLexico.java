@@ -17,6 +17,7 @@ public class AnalisadorLexico {
     private static Deque<Token> tksEncontrados = new LinkedList<>();
     private static BufferedReader reader;
     private static String line;
+    private static Integer nLine = 0;
 
     public AnalisadorLexico(String fileName) {
         try {
@@ -43,8 +44,10 @@ public class AnalisadorLexico {
         try {
             do {
                 line = reader.readLine();
+                nLine++;
                 if (line != null) {
                     for (Token token : geraToken(line)) {
+                        token.setLinha(nLine.toString());
                         if (!comentarioK && !comentarioP)
                             tksEncontrados.add(token);
                         if (token.getTipoToken().equals(TokensReservados.LCOMENTK) && (!comentarioK && !comentarioP)) {

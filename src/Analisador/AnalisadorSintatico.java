@@ -16,6 +16,11 @@ import static Token.Enums.TokenGenerico.*;
 import static Token.Enums.TokensReservados.*;
 import static Token.Enums.TokenSintaticosEnum.*;
 
+//DECLARACAO DE PROCEDIMENTOS NAO EXECUTA COMO ESPERADO
+//PROCEDIMENTO, PARAMETROS NAO PODE TER O MESMO NOME QUE AS VARIAVEIS DA PROCEDURE
+//AO INVES DE ADICIONAR A DECLARAO PROCEDURE NOS TOKENS ANALISADOS ADICIONAR DENTRO DO TOKEN PROCEDURE
+//linha 346 adicionar true e false
+
 public class AnalisadorSintatico {
 
     private static List<Token> tokensAnalisados = new ArrayList<>();
@@ -26,21 +31,23 @@ public class AnalisadorSintatico {
     private static Token tokenAtual;
     private static String tokenComErro = "";
 
-    public static List<Token> start() {
+    public static Token start() {
         estadoAnalise = PROGRAMA;
+        TokenSintatico bloco = null;
         try {
             tokenAtual = geraToken();
-            regras();
-            tokensAnalisados.forEach(token -> token.imprimeToken(""));
-            return tokensAnalisados;
+            bloco = regras();
         } catch (AnaliseException e) {
-            tokensAnalisados.forEach(token -> token.imprimeErro());
             System.out.println("\u001B[31m" + e.getTipo() + " Exception, " + e.getMessage() + "\u001B[0m");
-            return null;
         }
+
+        tokensAnalisados.forEach(token -> token.imprimeErro());
+        tokensAnalisados.forEach(token -> token.imprimeToken(""));
+
+        return bloco;
     }
 
-    private static void regras() throws AnaliseException {
+    private static TokenSintatico regras() throws AnaliseException {
 
         TokenSintatico bloco = new TokenSintatico(BLOCO, new ArrayList<>());
 
@@ -59,8 +66,9 @@ public class AnalisadorSintatico {
                             addTokenAnalisado(bloco);
                             estadoAnalise = COMANDO_COMPOSTO;
                         } else {
-                            if (!bloco.getTokens().get(bloco.getTokens().size() - 1).getTipoToken().equals(ERRO))
-                                tokenComErro = tokenAtual.getLexema();
+                            if (!hasErroUltimoBloco(bloco))
+                                tokenComErro = tokenAtual.getTipoToken().getDescricao() + " line: "
+                                        + tokenAtual.getLinha();
                             bloco.getTokens().add(new Token(ERRO,
                                     "Syntax exception, " + tokenAtual.getLexema()
                                             + " is not a valid token for <BLOCO>"));
@@ -89,7 +97,14 @@ public class AnalisadorSintatico {
         } finally {
             programa.getTokens().add(programa.getTokens().size() - 1, bloco);
         }
+        return bloco;
+    }
 
+    private static Boolean hasErroUltimoBloco(TokenSintatico estrutura) {
+        Integer tamanho = estrutura.getTokens().size();
+        if (tamanho > 0)
+            return estrutura.getTokens().get(tamanho - 1).getTipoToken().equals(ERRO);
+        return false;
     }
 
     private static Boolean analisaPrograma() throws AnaliseException {
@@ -342,7 +357,11 @@ public class AnalisadorSintatico {
         while (!comparaLstToken(tokenAtual, fExpressoes)) {
             analisaExpressao(fExpressoes, lstExp, qtd++);
         }
-
+        for (Token t : lstExp.getTokens()) {
+            if (t.getTipoToken().equals(ERRO)) {
+                return trataErro(fExpressoes);
+            }
+        }
         addTkSintaticoFilho(tkPai, lstExp);
         return true;
     }
@@ -529,7 +548,7 @@ public class AnalisadorSintatico {
     }
 
     private static Boolean trataErro(List<TipoToken> proximosTokenValido) throws AnaliseException {
-        tokenComErro = tokenAtual.getTipoToken().getDescricao();
+        tokenComErro = tokenAtual.getTipoToken().getDescricao() + " line: " + tokenAtual.getLinha();
         // System.out.println("\u001B[31m ----------- ERRO ------------ \u001B[0m");
         while (geraToken() != null) {
             if (comparaLstToken(tokenAtual, proximosTokenValido)) {

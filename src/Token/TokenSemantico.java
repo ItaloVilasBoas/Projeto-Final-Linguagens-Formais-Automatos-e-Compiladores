@@ -39,7 +39,7 @@ public class TokenSemantico extends TokenSintatico {
     public void imprimeToken(String tabulacao) {
 
         System.out.print(
-                tabulacao + "\u001B[34m<" + this.getTipoToken().getDescricao() + "," + this.getTipoDado()
+                tabulacao + "\u001B[34m<" + this.getTipoToken().getDescricao() + "," + this.getValor()
                         + ">\u001B[0m\n");
         for (Token token : this.getTokens()) {
             // if (token instanceof TokenSintatico || token instanceof TokenSemantico)

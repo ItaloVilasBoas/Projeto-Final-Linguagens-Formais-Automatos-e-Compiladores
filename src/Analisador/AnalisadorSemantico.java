@@ -23,6 +23,12 @@ public class AnalisadorSemantico {
     public static TokenSemantico analisaSemantica(TokenSintatico sintatico, Map<String, TokenIdentificador> listaTkId)
             throws AnaliseException {
 
+        for (Token t : sintatico.getTokens()) {
+            if (t.getTipoToken().equals(ERRO)) {
+                throw new AnaliseException(t.getLexema(), "Syntax");
+            }
+        }
+
         switch (getTipoEnumSintatico(sintatico)) {
             case ESTRUTURA_ATRIBUICAO:
                 return analisaAtribuicao(sintatico, listaTkId);
@@ -49,10 +55,19 @@ public class AnalisadorSemantico {
         Token toDownTo = sintatico.getTokens().get(2);
         TokenSemantico expressao = (TokenSemantico) sintatico.getTokens().get(3);
 
+        String repetivo = "FOR " + atribuicao.getTokens().get(0).getLexema();
+        repetivo += atribuicao.getTokens().get(1).getTipoToken().getDescricao();
+        repetivo += ((TokenSemantico) atribuicao.getTokens().get(2)).getValor();
+        repetivo += toDownTo.getLexema() + " " + expressao.getValor();
+        repetivo += ", line " + expressao.getTokens().get(0).getLinha();
+
+        String mA = "\nType mismatch: cannot convert from " + atribuicao.getTipoDado() + " to INTEGER";
+        String mE = "\nType mismatch: cannot convert from " + expressao.getTipoDado() + " to INTEGER";
+
         if (!atribuicao.getTipoDado().equals(INTEGER.getDescricao()))
-            throw new AnaliseException("", "Semantic");
+            throw new AnaliseException(repetivo + mA, "Semantic");
         if (!expressao.getTipoDado().equals(INTEGER.getDescricao()))
-            throw new AnaliseException("", "Semantic");
+            throw new AnaliseException(repetivo + mE, "Semantic");
 
         return new TokenSemantico(sintatico, expressao.getValor(),
                 toDownTo.getLexema() + " " + expressao.getValor());
@@ -71,10 +86,13 @@ public class AnalisadorSemantico {
         }
 
         if (TokenController.getListaProcedures().get(lex) == null)
-            throw new AnaliseException("The procedure " + lex + " is undefined", "Semantic");
+            throw new AnaliseException("The procedure " + lex + " is undefined, line " + idProcedure.getLinha(),
+                    "Semantic");
 
         if (!TokenController.getListaProcedures().get(lex).validaChamadaProcedure(listaParametros))
-            throw new AnaliseException("The procedure " + lex + " is not applicable for the given arguments",
+            throw new AnaliseException(
+                    "The procedure " + lex + " is not applicable for the given arguments, line "
+                            + idProcedure.getLinha(),
                     "Semantic");
         return new TokenSemantico(sintatico, "", "");
     }
@@ -89,7 +107,7 @@ public class AnalisadorSemantico {
         }
 
         String m = "Type mismatch: cannot convert from " + expressao.getTipoDado() + " to BOOLEAN in: IF ";
-        m += expressao.getValor() + " THEN";
+        m += expressao.getValor() + " THEN, line " + lstTokens.get(0).getLinha();
         throw new AnaliseException(m, "Semantic");
     }
 
@@ -97,16 +115,22 @@ public class AnalisadorSemantico {
             throws AnaliseException {
         List<Token> lstTokens = sintatico.getTokens();
         TokenIdentificador identificador = listaTkId.get(lstTokens.get(0).getLexema().toUpperCase());
-
         TokenSemantico expressao = (TokenSemantico) lstTokens.get(2);
 
+        if (identificador == null || identificador.getTipoDado() == null) {
+            String m = sintatico.getTokens().get(0).getLexema().toUpperCase();
+            m += " cannot be resolved to a variable, line ";
+            m += sintatico.getTokens().get(0).getLinha();
+            throw new AnaliseException(m, "Semantic");
+        }
         if (isCompativelAtribuicao(identificador.getTipoDado(), expressao.getTipoDado())) {
-            return new TokenSemantico(sintatico, expressao.getValor(), expressao.getTipoDado());
+            return new TokenSemantico(sintatico, expressao.getValor(), identificador.getTipoDado());
         }
 
         String m = "Type mismatch: cannot convert from " + expressao.getTipoDado();
         m += " to " + identificador.getTipoDado();
         m += " in: " + identificador.getLexema() + " := " + expressao.getValor();
+        m += ", line " + lstTokens.get(0).getLinha();
         throw new AnaliseException(m, "Semantic");
     }
 
@@ -137,7 +161,8 @@ public class AnalisadorSemantico {
             if (token.getTipoToken().equals(ID)) {
                 TokenIdentificador identificador = listaTkId.get(token.getLexema().toUpperCase());
                 if (identificador == null || identificador.getTipoDado() == null) {
-                    String m = token.getLexema().toUpperCase() + " cannot be resolved to a variable";
+                    String m = token.getLexema().toUpperCase() + " cannot be resolved to a variable, line ";
+                    m += token.getLinha();
                     throw new AnaliseException(m, "Semantic");
                 }
                 expressaoValor += identificador.getLexema() + " ";
@@ -299,7 +324,7 @@ public class AnalisadorSemantico {
         TokenProcedure procedure = TokenController.getProcedureLstProcedure(chaveProcedure);
         for (Token t : listIds) {
             String chave = t.getLexema().toUpperCase();
-            if (procedure.getListaIdentificadores().get(chave) != null)
+            if ((procedure.getListaIdentificadores().get(chave) != null))
                 throw new AnaliseException("Duplicate local variable " + chave, "Semantic");
 
             TokenIdentificador tokenId = new TokenIdentificador(new Token(ID, chave));

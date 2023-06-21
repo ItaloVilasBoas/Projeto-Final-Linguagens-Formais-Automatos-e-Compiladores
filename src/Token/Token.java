@@ -8,6 +8,7 @@ public class Token {
 
     private TipoToken tipoToken;
     private String lexema;
+    private String linha;
 
     public Token(TipoToken tipo, String lexema) {
         this.tipoToken = tipo;
@@ -30,6 +31,14 @@ public class Token {
         this.lexema = lexema;
     }
 
+    public String getLinha() {
+        return linha;
+    }
+
+    public void setLinha(String linha) {
+        this.linha = linha;
+    }
+
     @Override
     public String toString() {
         if (this.getTipoToken().equals(TokenSintaticosEnum.ERRO_SINTATICO)
@@ -44,7 +53,7 @@ public class Token {
 
     public void imprimeErro() {
         if (this.getTipoToken().equals(TokenGenerico.ERRO))
-            System.out.println(this.getLexema());
+            System.out.println(this.getLexema() + ", line " + linha);
     }
 
 }
