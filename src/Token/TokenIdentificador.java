@@ -9,11 +9,11 @@ public class TokenIdentificador extends Token {
     private String tipoDado;
 
     public TokenIdentificador(Token token) {
-        super(token.getTipoToken(), token.getLexema());
+        super(token.getTipoToken(), token.getLexema().toUpperCase());
     }
 
     public TokenIdentificador(Token token, String tipoDado) {
-        super(token.getTipoToken(), token.getLexema());
+        super(token.getTipoToken(), token.getLexema().toUpperCase());
         this.tipoDado = tipoDado;
     }
 
@@ -47,5 +47,13 @@ public class TokenIdentificador extends Token {
 
     public Boolean comparaTipoDado(TokenSemantico tkComparar) {
         return tkComparar.getTipoDado().equals(this.getTipoDado());
+    }
+
+    public TokenIdentificador copiar() {
+        TokenIdentificador copia = new TokenIdentificador(new Token(getTipoToken(), getLexema()));
+        copia.setValor(this.valor);
+        copia.setCategoria(this.categoria);
+        copia.setTipoDado(this.tipoDado);
+        return copia;
     }
 }

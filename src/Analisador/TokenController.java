@@ -14,11 +14,14 @@ import Token.Enums.TokensReservados;
 
 public class TokenController {
 
-    private static Map<String, Token> listaPalavrasReservadas = new HashMap<>();
-    private static Map<String, TokenIdentificador> listaIdentificadores = new HashMap<>();
-    private static Map<String, TokenProcedure> listaProcedures = new HashMap<>();
+    private static Map<String, Token> listaPalavrasReservadas;
+    private static Map<String, TokenIdentificador> listaIdentificadores;
+    private static Map<String, TokenProcedure> listaProcedures;
 
     public TokenController() {
+        listaIdentificadores = new HashMap<>();
+        listaProcedures = new HashMap<>();
+        listaPalavrasReservadas = new HashMap<>();
         Arrays.asList(TokensReservados.values()).stream().forEach(tipo -> {
             adicionaPalavraListaReservadas(tipo.getDescricao(), new Token(tipo, tipo.toString()));
         });
@@ -26,7 +29,7 @@ public class TokenController {
                 .forEach(tipo -> {
                     adicionaPalavraListaProcedures(tipo.getDescricao(), new Token(tipo, tipo.getDescricao()), null);
                     adicionaPalavraListaIdentificadores(tipo.getDescricao(), new Token(tipo, tipo.getDescricao()));
-                    updateCategoriaTkIds(tipo.getDescricao(), "procedure");
+                    updateCategoriaTkIds(tipo.getDescricao(), "PROCEDURE");
                 });
     }
 

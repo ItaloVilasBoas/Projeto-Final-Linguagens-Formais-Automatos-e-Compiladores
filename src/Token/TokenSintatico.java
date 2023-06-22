@@ -1,5 +1,6 @@
 package Token;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import Token.Enums.TipoToken;
@@ -42,10 +43,11 @@ public class TokenSintatico extends Token {
         }
     }
 
-    public void imprimeErro() {
+    public List<String> imprimeErro() {
+        List<String> erros = new ArrayList<>();
         for (Token token : tokens) {
-            token.imprimeErro();
+            erros.addAll(token.imprimeErro());
         }
-
+        return erros;
     }
 }

@@ -1,5 +1,8 @@
 package Token;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import Token.Enums.TipoToken;
 import Token.Enums.TokenGenerico;
 import Token.Enums.TokenSintaticosEnum;
@@ -51,9 +54,11 @@ public class Token {
         System.out.println(tabulacao + this);
     }
 
-    public void imprimeErro() {
+    public List<String> imprimeErro() {
+        List<String> erros = new ArrayList<>();
         if (this.getTipoToken().equals(TokenGenerico.ERRO))
-            System.out.println(this.getLexema() + ", line " + linha);
+            erros.add(this.getLexema() + ", line " + linha);
+        return erros;
     }
 
 }

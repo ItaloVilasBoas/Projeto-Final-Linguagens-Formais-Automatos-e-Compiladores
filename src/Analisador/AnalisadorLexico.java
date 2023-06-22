@@ -17,9 +17,11 @@ public class AnalisadorLexico {
     private static Deque<Token> tksEncontrados = new LinkedList<>();
     private static BufferedReader reader;
     private static String line;
-    private static Integer nLine = 0;
+    private static Integer nLine;
 
     public AnalisadorLexico(String fileName) {
+        tksEncontrados = new LinkedList<>();
+        nLine = 0;
         try {
             AnalisadorLexico.reader = new BufferedReader(new FileReader(fileName));
         } catch (Exception e) {

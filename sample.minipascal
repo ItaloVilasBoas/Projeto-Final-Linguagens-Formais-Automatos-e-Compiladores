@@ -1,17 +1,20 @@
-program alturamf;
+PROGRAM teste;
 
-  procedure teste (VAR N, B: integer; var score: integer);
-    var
-      quant,cont,cont_m,cont_f:integer;
-      sexo,sme_alt,sma_alt:string;
-      alt,alt_maior,alt_menor,alt_media,soma_alt,dif:real;
+  PROCEDURE Area_Circulo(Raio: real);
+  { PROCEDURE para calcular a área de um círculo. }
+  var
+    Area, Comprimento, PI : real;
   begin
-    if dif>0 then 
-        write(dif,'% a mais de homens')
-    else write(sexo,'% a mais de mulheres');
+    PI := 3.141519265;
+    Area := PI * Raio * Raio;
+    Comprimento := 2 * PI * Raio;
+    writeln( 'Área = ', Area );
+    writeln( 'Comprimento da Circunferencia = ', Comprimento );
   end;
-
-begin
-  teste(3, 4, 5);
-  write('nao faz nada');
-end.
+  
+VAR Raio: real;
+BEGIN
+	WRITEln('Raio: ');
+  READ(RAIO);
+	Area_Circulo(raio);
+END.

@@ -129,8 +129,7 @@ public class AnalisadorSemantico {
 
         String m = "Type mismatch: cannot convert from " + expressao.getTipoDado();
         m += " to " + identificador.getTipoDado();
-        m += " in: " + identificador.getLexema() + " := " + expressao.getValor();
-        m += ", line " + lstTokens.get(0).getLinha();
+        m += " in line " + lstTokens.get(0).getLinha();
         throw new AnaliseException(m, "Semantic");
     }
 
@@ -167,6 +166,9 @@ public class AnalisadorSemantico {
                 }
                 expressaoValor += identificador.getLexema() + " ";
                 expressaoTipoDado += identificador.getTipoDado() + " ";
+            } else if (token.getTipoToken().equals(TRUE) || token.getTipoToken().equals(FALSE)) {
+                expressaoValor += token.getTipoToken().getDescricao() + " ";
+                expressaoTipoDado += "BOOLEAN ";
             } else if (token.getTipoToken() instanceof TokenGenerico) {
                 expressaoValor += token.getLexema() + " ";
                 expressaoTipoDado += token.getTipoToken().getDescricao() + " ";
@@ -311,7 +313,7 @@ public class AnalisadorSemantico {
             String chave = t.getLexema().toUpperCase();
             if (TokenController.getTkIds(chave).getCategoria() != null)
                 throw new AnaliseException("Duplicate local variable " + chave, "Semantic");
-            TokenController.updateCategoriaTkIds(chave, "var");
+            TokenController.updateCategoriaTkIds(chave, "VAR");
             TokenController.updateTipoDadoTkIds(chave, tipo);
         }
         listIds.clear();
@@ -328,12 +330,21 @@ public class AnalisadorSemantico {
                 throw new AnaliseException("Duplicate local variable " + chave, "Semantic");
 
             TokenIdentificador tokenId = new TokenIdentificador(new Token(ID, chave));
-            tokenId.setCategoria("var procedure");
+            tokenId.setCategoria("VAR PROCEDURE");
             tokenId.setTipoDado(tipo);
             procedure.getListaIdentificadores().put(chave, tokenId);
         }
         listIds.clear();
         return listIds;
     }
+
+    // private static Boolean isEqualParametros(TokenProcedure procedure, String
+    // chave) {
+    // for (TokenIdentificador parametro : procedure.getParametros()) {
+    // if (parametro.getLexema().toUpperCase().equals(chave))
+    // return true;
+    // }
+    // return false;
+    // }
 
 }
