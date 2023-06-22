@@ -3,6 +3,7 @@ package Analisador;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -23,7 +24,7 @@ public class AnalisadorLexico {
         tksEncontrados = new LinkedList<>();
         nLine = 0;
         try {
-            AnalisadorLexico.reader = new BufferedReader(new FileReader(fileName));
+            AnalisadorLexico.reader = new BufferedReader(new FileReader(fileName, StandardCharsets.UTF_8));
         } catch (Exception e) {
             System.out.println("Nao foi possivel realizar a leitura do arquivo.");
         }
