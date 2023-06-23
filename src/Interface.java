@@ -56,6 +56,14 @@ public class Interface extends JFrame {
         inputCompilador += trecho;
     }
 
+    public boolean isPrintableChar(char c) {
+        Character.UnicodeBlock block = Character.UnicodeBlock.of(c);
+        return (!Character.isISOControl(c)) &&
+                c != KeyEvent.CHAR_UNDEFINED &&
+                block != null &&
+                block != Character.UnicodeBlock.SPECIALS;
+    }
+
     public Interface() throws IOException {
         super("COMPILADOR MINI PASCAL");
 
@@ -74,8 +82,7 @@ public class Interface extends JFrame {
             @Override
             public void keyPressed(KeyEvent e) {
                 int key = e.getKeyCode();
-                char car = e.getKeyChar();
-                boolean isPrintavel = (Character.isLetter(car) || Character.isDigit(car) || car == ' ');
+                boolean isPrintavel = isPrintableChar(e.getKeyChar());
                 boolean inputAcces = Compilador.getInputAcces();
                 if (inputAcces && key == VK_ENTER && !inputCompilador.isBlank()) {
                     Compilador.setInput(inputCompilador);
