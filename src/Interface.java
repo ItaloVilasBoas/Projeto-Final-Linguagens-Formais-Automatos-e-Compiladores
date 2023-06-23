@@ -74,12 +74,15 @@ public class Interface extends JFrame {
             @Override
             public void keyPressed(KeyEvent e) {
                 int key = e.getKeyCode();
+                char car = e.getKeyChar();
+                boolean isPrintavel = (Character.isLetter(car) || Character.isDigit(car) || car == ' ');
                 boolean inputAcces = Compilador.getInputAcces();
                 if (inputAcces && key == VK_ENTER && !inputCompilador.isBlank()) {
                     Compilador.setInput(inputCompilador);
+                    inputCompilador = "";
                 } else if (inputAcces && key == VK_BACK_SPACE && !inputCompilador.isEmpty()) {
                     backspaceCompilador();
-                } else if (inputAcces && (key != VK_ENTER)) {
+                } else if (inputAcces && (key != VK_ENTER) && isPrintavel) {
                     insereLetraCompilador(e.getKeyChar() + "");
                 }
             }
