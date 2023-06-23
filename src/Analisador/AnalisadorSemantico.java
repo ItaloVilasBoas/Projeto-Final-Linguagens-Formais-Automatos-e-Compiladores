@@ -48,8 +48,16 @@ public class AnalisadorSemantico {
 
     private static TokenSemantico analisaRepetitivo(TokenSintatico sintatico) throws AnaliseException {
         var tipoRepetitivo = sintatico.getTokens().get(0);
-        if (tipoRepetitivo.getTipoToken().equals(WHILE) || tipoRepetitivo.getTipoToken().equals(REPEAT)) {
+        if (tipoRepetitivo.getTipoToken().equals(WHILE)) {
             return analisaCondicional(sintatico);
+        } else if (tipoRepetitivo.getTipoToken().equals(REPEAT)) {
+            TokenSemantico expressao = (TokenSemantico) sintatico.getTokens().get(3);
+            if (expressao.getTipoDado().equals(BOOLEAN.getDescricao())) {
+                return new TokenSemantico(sintatico, expressao.getValor(), expressao.getTipoDado());
+            }
+            String m = "Type mismatch: cannot convert from " + expressao.getTipoDado() + " to BOOLEAN in: IF ";
+            m += expressao.getValor() + " THEN, line " + sintatico.getTokens().get(0).getLinha();
+            throw new AnaliseException(m, "Semantic");
         }
         TokenSemantico atribuicao = (TokenSemantico) sintatico.getTokens().get(1);
         Token toDownTo = sintatico.getTokens().get(2);
