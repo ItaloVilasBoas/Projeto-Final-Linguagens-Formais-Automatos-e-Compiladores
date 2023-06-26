@@ -24,8 +24,8 @@ import static Token.Enums.TokensReservados.*;
 
 public class Compilador {
 
-    private static String input = "";
-    private static Boolean inputAcces = false;
+    private static String input;
+    private static Boolean inputAcces;
     private static JTextPane output;
     private static SimpleAttributeSet outputColor;
     private static SimpleAttributeSet error;
@@ -38,6 +38,8 @@ public class Compilador {
         Compilador.output = output;
         Compilador.outputColor = outputColor;
         Compilador.error = error;
+        input = "";
+        inputAcces = false;
     }
 
     public Compilador(Map<String, TokenIdentificador> listaIdentificadores) {
@@ -114,6 +116,8 @@ public class Compilador {
     private void escreveOutput(SimpleAttributeSet attributeSet, List<String> parametros, Boolean printLn) {
         try {
             for (String parametro : parametros) {
+                if (parametro.length() > 0 && parametro.charAt(0) == '\'')
+                    parametro = parametro.substring(1, parametro.length() - 1);
                 output.getStyledDocument().insertString(output.getStyledDocument().getLength(), parametro,
                         attributeSet);
             }
