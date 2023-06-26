@@ -186,6 +186,10 @@ public class AnalisadorSemantico {
             }
         }
 
+        if (expressaoValor.charAt(0) == '-') {
+            expressaoTipoDado = "INTEGER " + expressaoTipoDado;
+            expressaoValor = "0 " + expressaoValor;
+        }
         ArrayList<String> expressoes = new ArrayList<>(Arrays.asList(expressaoTipoDado.split(" ")));
         expressaoTipoDado = analisaTipoDado(expressoes);
 
